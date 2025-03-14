@@ -8,8 +8,8 @@
 		"Iamaprogrammer"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"homepage": "https://github.com/lamaprogramer/WaxItemFrames",
+		"sources": "https://github.com/lamaprogramer/WaxItemFrames"
 	},
 	"license": "MIT",
 	"icon": "assets/wax-item-frames/icon.png",
