@@ -1,0 +1,11 @@
+{
+  "required": true,
+  "package": "net.iamaprogrammer.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "ItemFrameMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+	}
+}
