@@ -52,7 +52,7 @@ public class ItemFrameMixin implements WaxedItemFrameAccess {
     }
 
     @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
-    private void waxDropLock(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    private void waxDropLock(ServerWorld world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         if (this.isWaxed()) {
             THIS.playSound(SoundEvents.BLOCK_SIGN_WAXED_INTERACT_FAIL, 1.0f, 1.0f);
             cir.setReturnValue(true);
