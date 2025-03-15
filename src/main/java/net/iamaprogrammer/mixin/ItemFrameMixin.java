@@ -2,6 +2,7 @@ package net.iamaprogrammer.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
 import net.iamaprogrammer.util.WaxedItemFrameAccess;
+import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
 import net.minecraft.entity.data.TrackedData;
@@ -51,7 +52,7 @@ public class ItemFrameMixin implements WaxedItemFrameAccess {
     }
 
     @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
-    private void waxDropLock(ServerWorld world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    private void waxDropLock(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         if (this.isWaxed()) {
             THIS.playSound(SoundEvents.BLOCK_SIGN_WAXED_INTERACT_FAIL, 1.0f, 1.0f);
             cir.setReturnValue(true);
@@ -78,7 +79,7 @@ public class ItemFrameMixin implements WaxedItemFrameAccess {
                 cir.setReturnValue(ActionResult.SUCCESS);
             } else if (this.isWaxed() && playerHandStack.getItem() instanceof AxeItem) {
                 this.setWaxed(false);
-                playerHandStack.damage(1, player);
+                playerHandStack.damage(1, player, EquipmentSlot.MAINHAND);
                 THIS.playSound(SoundEvents.BLOCK_SIGN_WAXED_INTERACT_FAIL, 1.0f, 1.0f);
                 cir.setReturnValue(ActionResult.SUCCESS);
             }
