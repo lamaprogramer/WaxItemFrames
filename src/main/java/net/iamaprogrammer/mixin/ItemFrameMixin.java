@@ -1,6 +1,7 @@
 package net.iamaprogrammer.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import net.iamaprogrammer.WaxItemFrames;
 import net.iamaprogrammer.util.WaxedItemFrameAccess;
 import net.minecraft.entity.EquipmentSlot;
 import net.minecraft.entity.damage.DamageSource;
@@ -13,10 +14,12 @@ import net.minecraft.item.AxeItem;
 import net.minecraft.item.HoneycombItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.math.random.Random;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -27,14 +30,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(ItemFrameEntity.class)
 public class ItemFrameMixin implements WaxedItemFrameAccess {
     @Unique
-    private final ItemFrameEntity THIS = (ItemFrameEntity)(Object)this;
+    private final ItemFrameEntity THIS = ((ItemFrameEntity)(Object)this);
     @Unique
-    private static final TrackedData<Boolean> WAXED = DataTracker.registerData(ItemFrameEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
-
-    @Inject(method = "initDataTracker", at = @At("TAIL"))
-    private void initWaxed(DataTracker.Builder builder, CallbackInfo ci) {
-        builder.add(WAXED, false);
-    }
+    private boolean waxed = false;
 
     @Inject(
         method = "interact",
@@ -52,9 +50,16 @@ public class ItemFrameMixin implements WaxedItemFrameAccess {
     }
 
     @Inject(method = "damage", at = @At("HEAD"), cancellable = true)
-    private void waxDropLock(ServerWorld world, DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
+    private void waxDropLock(DamageSource source, float amount, CallbackInfoReturnable<Boolean> cir) {
         if (this.isWaxed()) {
             THIS.playSound(SoundEvents.BLOCK_SIGN_WAXED_INTERACT_FAIL, 1.0f, 1.0f);
+            cir.setReturnValue(true);
+        }
+    }
+
+    @Inject(method = "canStayAttached", at = @At("HEAD"), cancellable = true)
+    private void waxFixed(CallbackInfoReturnable<Boolean> cir) {
+        if (WaxItemFrames.CONFIG.isItemFrameFixedWhenWaxed() && this.isWaxed()) {
             cir.setReturnValue(true);
         }
     }
@@ -73,13 +78,17 @@ public class ItemFrameMixin implements WaxedItemFrameAccess {
         if (!player.getWorld().isClient() && !playerHandStack.isEmpty() && player.isSneaking()) {
             if (!this.isWaxed() && playerHandStack.getItem() instanceof HoneycombItem) {
                 this.setWaxed(true);
-                playerHandStack.decrementUnlessCreative(1, player);
+                if (!player.getAbilities().creativeMode) {
+                    playerHandStack.decrement(1);
+                }
                 THIS.playSound(SoundEvents.ITEM_HONEYCOMB_WAX_ON, 1.0f, 1.0f);
                 player.getWorld().syncWorldEvent(null, 3003, THIS.getBlockPos(), 0);
                 cir.setReturnValue(ActionResult.SUCCESS);
             } else if (this.isWaxed() && playerHandStack.getItem() instanceof AxeItem) {
                 this.setWaxed(false);
-                playerHandStack.damage(1, player, EquipmentSlot.MAINHAND);
+                if (!player.getAbilities().creativeMode) {
+                    playerHandStack.damage(1, Random.create(), (ServerPlayerEntity) player);
+                }
                 THIS.playSound(SoundEvents.BLOCK_SIGN_WAXED_INTERACT_FAIL, 1.0f, 1.0f);
                 cir.setReturnValue(ActionResult.SUCCESS);
             }
@@ -98,11 +107,11 @@ public class ItemFrameMixin implements WaxedItemFrameAccess {
 
     @Override
     public void setWaxed(boolean waxed) {
-        THIS.getDataTracker().set(WAXED, waxed);
+        this.waxed = waxed;
     }
 
     @Override
     public boolean isWaxed() {
-        return THIS.getDataTracker().get(WAXED);
+        return this.waxed;
     }
 }
