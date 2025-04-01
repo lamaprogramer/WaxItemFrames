@@ -1,6 +1,7 @@
 package net.iamaprogrammer.mixin;
 
 import com.llamalad7.mixinextras.sugar.Local;
+import net.iamaprogrammer.WaxItemFrames;
 import net.iamaprogrammer.util.WaxedItemFrameAccess;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.data.DataTracker;
@@ -28,12 +29,7 @@ public class ItemFrameMixin implements WaxedItemFrameAccess {
     @Unique
     private final ItemFrameEntity THIS = (ItemFrameEntity)(Object)this;
     @Unique
-    private static final TrackedData<Boolean> WAXED = DataTracker.registerData(ItemFrameEntity.class, TrackedDataHandlerRegistry.BOOLEAN);
-
-    @Inject(method = "initDataTracker", at = @At("TAIL"))
-    private void initWaxed(DataTracker.Builder builder, CallbackInfo ci) {
-        builder.add(WAXED, false);
-    }
+    private boolean waxed;
 
     @Inject(
         method = "interact",
@@ -85,6 +81,13 @@ public class ItemFrameMixin implements WaxedItemFrameAccess {
         }
     }
 
+    @Inject(method = "canStayAttached", at = @At("HEAD"), cancellable = true)
+    private void waxFixed(CallbackInfoReturnable<Boolean> cir) {
+        if (WaxItemFrames.CONFIG.isItemFrameFixedWhenWaxed() && this.isWaxed()) {
+            cir.setReturnValue(true);
+        }
+    }
+
     @Inject(method = "writeCustomDataToNbt", at = @At("TAIL"))
     private void writeCustomNbt(NbtCompound nbt, CallbackInfo ci) {
         nbt.putBoolean("Waxed", this.isWaxed());
@@ -92,16 +95,16 @@ public class ItemFrameMixin implements WaxedItemFrameAccess {
 
     @Inject(method = "readCustomDataFromNbt", at = @At("TAIL"))
     private void readCustomNbt(NbtCompound nbt, CallbackInfo ci) {
-        this.setWaxed(nbt.getBoolean("Waxed"));
+        this.setWaxed(nbt.getBoolean("Waxed").get());
     }
 
     @Override
     public void setWaxed(boolean waxed) {
-        THIS.getDataTracker().set(WAXED, waxed);
+        this.waxed = waxed;
     }
 
     @Override
     public boolean isWaxed() {
-        return THIS.getDataTracker().get(WAXED);
+        return this.waxed;
     }
 }
